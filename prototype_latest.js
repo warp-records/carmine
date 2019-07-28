@@ -11,7 +11,7 @@ var colorDat, colorModProps, node;
 function getTextNodes(){
   var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
   while(n=walk.nextNode()) a.push(n);
-  return a;
+  return a;g
 }
 //big thanks to phrogz for this: https://stackoverflow.com/questions/10730309/find-all-text-nodes-in-html-page
 
@@ -60,7 +60,7 @@ function getColorData() {
             };
         	
             textGroups[index].push(node);
-			for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") != "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement);
+	    	for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") != "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement);
 			textNodeBgs.push(getComputedStyle(bgNode).getPropertyValue("background-color"));
         };
     };
@@ -75,7 +75,7 @@ function getColorData() {
         elemGroupsOrdered[i] = elemGroups[oldBgWeights.indexOf(bgWeightsOrdered[i])];
     }
 
-    return [elemGroups, allBgs, textGroups, allTextColors, textNodeBgs]
+    return [elemGroups, allBgs, textGroups, allTextColors, textNodeBgs];
 };
 
 
@@ -134,10 +134,6 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
     closestColor = colorList[colorScores.indexOf(Math.min(...colorScores))];
     
     return closestColor;
-};
-
-function getBestTextColor(textNode){
-    //todo
 };
 
 //MAIN FUNCTION------------------------------------------------------
