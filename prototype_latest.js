@@ -18,18 +18,20 @@ function getTextNodes(){
 function getColorData() {
     var allBgs = [];
     var allTextColors = [];
+	var elemBorders = [];//like element borders
     var bgWeights = [];
     var bgWeightsOrdered = [];
     var elemGroups = [];
     var textGroups = [];
 	var textNodeBgs = [];
     var elemGroupsOrdered = [];//ordered by "weight" property
-    var node, bgNode, bg, textColor, style, oldBgWeights, weight, numBgs, index;
+    var node, bgNode, bg, bgBorder, textColor, style, oldBgWeights, weight, numBgs, index;
 
     for (var i = 0; i < bgNodelen; ++i) {
         node = bgNodeList[i];
         style = getComputedStyle(node);
         bg = style.getPropertyValue("background-color");
+		bgBorder = style.getPropertyValue("border-top-color");
         weight = node.offsetWidth*node.offsetHeight;//calculate on-screen size
 
         //gather list of objects with same colors, and record data about their nodes
@@ -41,9 +43,10 @@ function getColorData() {
                 allBgs.push(bg);
                 bgWeights.push(0);
             };
-
+			
             if (weight==weight) bgWeights[index] += weight;//make sure the weight isn't NaN
             elemGroups[index].push(node);
+			elemBorders[i] = bgBorder;
         };
     };
 
@@ -75,7 +78,7 @@ function getColorData() {
         elemGroupsOrdered[i] = elemGroups[oldBgWeights.indexOf(bgWeightsOrdered[i])];
     }
 
-    return [elemGroups, allBgs, textGroups, allTextColors, textNodeBgs];
+    return [elemGroups, allBgs, textGroups, allTextColors, textNodeBgs,  elemBorders];
 };
 
 
@@ -101,6 +104,20 @@ function modColor(ogColor, desiredColor, colorModProps){
     return tinycolor(newColor).toHexString();
 };
 
+function modBorderColor(ogBgColor, newBgColor, oldBorderColor){
+    var ogHsl, newHsl, oldBorderHsl, newBorder;
+    
+    ogBgHsl = tinycolor(ogBgColor).toHsl();
+    newBgHsl = tinycolor(newBgColor).toHsl();
+    oldBorderHsl = tinycolor(oldBorderColor).toHsl();
+	newBorder = oldBorderHsl;
+
+    newBorder.h = ogBgHsl.h-oldBorderHsl.h+newBgHsl.h;
+    newBorder.s = ogBgHsl.s-oldBorderHsl.s+newBgHsl.s;
+	newBorder.l = ogBgHsl.l-oldBorderHsl.l+newBgHsl.l;
+    
+    return tinycolor(newBorder).toHexString();
+};
 
 /*
 property weights:
@@ -140,9 +157,10 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
 
 //tinycolor.mostReadable("#ff0088", ["#2e0c3a"],{includeFallbackColors:true,level:"AAA",size:"small"}).toHexString()
 
-function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, colorList, colorModProps, colorPropWeights) {
+function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
     var numColors = colorList.length;
     var elemNewColors = [];
+	var elemBorderNewColors = [];
 	var textNewColors = [];
 	textColors.push("black", "white");
     var colorUsageList = Array(numColors).fill(0);
@@ -153,21 +171,27 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, colorLi
         closestColor = getClosestColor(bgs[i], colorList, colorPropWeights, colorUsageList);
         elemNewColors[i] = modColor(bgs[i], colorList[i], colorModProps);
         colorUsageList[colorList.indexOf(closestColor)]++;
-    };	
+		for (j = 0; j < elemGroups[i].length; ++j, ++k) {
+			elemBorderNewColors.push(modBorderColor(bgs[i], elemNewColors[i]), elemBorders[k])
+		};
+    };
 
 	for (var i = 0; i < textNodeBgs.length; ++i) {    
         textNewColors[i] = tinycolor.mostReadable(textNodeBgs[i], textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString()
     };
     
+	k = 0;//reset k for the text coloring
     //set everything to their new colors!
     for (var i = 0; i < elemGroups.length; ++i) {
         for (var j = 0; j < elemGroups[i].length; ++j) {
             elemGroups[i][j].style.backgroundColor = elemNewColors[i];
+			elemGroups[i][j].style.borderColor = elemBorderNewColors[k];
         };
     };
 
+	k = 0;
 	for (var i = 0; i < textGroups.length; ++i) {
-        for (var j = 0; j < textGroups[i].length; ++j,++k) {
+        for (var j = 0; j < textGroups[i].length; ++j, ++k) {
             textGroups[i][j].style.color = textNewColors[k];
         };
     };
@@ -180,8 +204,8 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, colorLi
 colorData = getColorData();
 
 colorModProps = {
-    s: 1,
-    l: 1
+    s: 0.75,
+    l: 0.5
 };
 /*
 How much flexibility the color changing 
@@ -203,4 +227,4 @@ being chosen, to prevent theme colors from
 being overused.
 */
 
-themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], ["red", "blue", "yellow"], colorModProps, colorPropWeights);//Like the Starboy album art!
+themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], ["red", "blue", "yellow"], colorModProps, colorPropWeights);//Like the Starboy album art!
