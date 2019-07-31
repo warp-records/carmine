@@ -1,6 +1,9 @@
 //Carmine prototype
 //https://github.com/theultraman20/carmine
 //By theultraman20, GNU General Public License
+var colorFader = document.createElement("style");
+colorFader.innerText = "*{    -moz-transition:background-color 5s ease-in;    -o-transition:background-color 5s ease-in;    -webkit-transition:background-color 5s ease-in; }"
+//document.querySelector("head").appendChild(colorFader);
 
 var bgNodeList = document.querySelectorAll(":not(html):not(script):not(link):not(title):not(meta)");
 var textNodeList = getTextNodes();
@@ -78,7 +81,7 @@ function getColorData() {
         elemGroupsOrdered[i] = elemGroups[oldBgWeights.indexOf(bgWeightsOrdered[i])];
     }
 
-    return [elemGroups, allBgs, textGroups, allTextColors, textNodeBgs,  elemBorders];
+    return [elemGroups, allBgs, bgWeights, textGroups, allTextColors, textNodeBgs,  elemBorders];
 };
 
 
@@ -171,11 +174,12 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
 
 //tinycolor.mostReadable("#ff0088", ["#2e0c3a"],{includeFallbackColors:true,level:"AAA",size:"small"}).toHexString()
 
-function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
+function themePage(elemGroups, bgs, bgWeights, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
     var numColors = colorList.length;
     var elemNewColors = [];
 	var elemBorderNewColors = [];
 	var textNewColors = [];
+    textColors = [];
 	textColors.push("black", "white");
     var colorUsageList = Array(numColors).fill(0);
 	var k = 0;
@@ -219,8 +223,8 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBor
 colorData = getColorData();
 
 colorModProps = {
-    s: 0.5,
-    l: 0.25
+    s: 0.75,
+    l: 0.5
 };
 /*
 How much flexibility the color changing 
@@ -231,7 +235,8 @@ colorPropWeights = {
     h: 1, 
     s: 0, 
     l: 0, 
-    count: 0
+    count: 0,
+    size: 1
 };
 /*
 How much each property matters when
@@ -242,4 +247,4 @@ being chosen, to prevent theme colors from
 being overused.
 */
 
-themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], ["red", "blue"], colorModProps, colorPropWeights);//Like the Starboy album art!
+themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], ["red", "blue"], colorModProps, colorPropWeights)//Like the Starboy album art!
