@@ -97,8 +97,6 @@ function modColor(ogColor, desiredColor, colorModProps){
 	//if (ogHsl.s == 0) return ogColor;
     
     //create the new color saturation and light, but only within the specified range
-    //newColor.s = Math.min(Math.abs(ogHsl.s+Math.min(colorModProps.s, Math.abs(ogHsl.s-desiredHsl.s))), 1);
-    //newColor.l = Math.min(Math.abs(ogHsl.l+Math.min(colorModProps.l, Math.abs(ogHsl.l-desiredHsl.l))), 1);
 
     if (desiredHsl.s >= ogHsl.s) {
         newColor.s = ogHsl.s+Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
@@ -112,7 +110,7 @@ function modColor(ogColor, desiredColor, colorModProps){
         newColor.l = ogHsl.l-Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
     };
     
-    console.log("==========\nOg: " + tinycolor(ogColor).toHslString() + "\nDesired color: " + tinycolor(desiredColor).toHslString() + "\nNew color: " + tinycolor(newColor).toHslString());
+    //console.log("==========\nOg: " + tinycolor(ogColor).toHslString() + "\nDesired color: " + tinycolor(desiredColor).toHslString() + "\nNew color: " + tinycolor(newColor).toHslString());
     //};
     
     return tinycolor(newColor).toHexString();
@@ -155,16 +153,16 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
         colorCmyk = tinycolor(colorList[i]).toCmyk();
         colorScores[i] = (Math.abs(ogColorCmyk.c-colorCmyk.c)+Math.abs(ogColorCmyk.m-colorCmyk.m)+Math.abs(ogColorCmyk.y-colorCmyk.y))/360*colorPropWeights.h+Math.abs(ogColorHsl.s-colorHsl.s)*colorPropWeights.s+Math.abs(ogColorHsl.l-colorHsl.l)*colorPropWeights.l+colorUsageList[i]*colorPropWeights.count;//make sure colors aren't overused!
 
-        console.log("\n=========================\n"+colorList[i].toUpperCase() + " COLOR SCORE DATA: ");
+        /*console.log("\n=========================\n"+colorList[i].toUpperCase() + " COLOR SCORE DATA: ");
         console.log("   Cmyk score: " + (Math.abs(ogColorCmyk.c-colorCmyk.c)+Math.abs(ogColorCmyk.m-colorCmyk.m)+Math.abs(ogColorCmyk.y-colorCmyk.y))/360*colorPropWeights.h);
         console.log("   Saturation score: " + Math.abs(ogColorHsl.s-colorHsl.s)*colorPropWeights.s);
         console.log("   Luminance score: " + Math.abs(ogColorHsl.l-colorHsl.l)*colorPropWeights.l);
-        console.log("TOTAL: " + colorScores[i]);
+        console.log("TOTAL: " + colorScores[i]);*/
     };
 
     closestColor = colorList[colorScores.indexOf(Math.min(...colorScores))];
     
-    console.log("Closest color: " + closestColor);
+    //console.log("Closest color: " + closestColor);
 
     return closestColor;
 };
@@ -184,7 +182,7 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBor
     var closestColor, finalColor;
 
     for (var i = 0; i < elemGroups.length; ++i) {
-        console.log("============================\n" + tinycolor(bgs[i]).toRgbString());
+        //console.log("============================\n" + tinycolor(bgs[i]).toRgbString());
         closestColor = getClosestColor(bgs[i], colorList, colorPropWeights, colorUsageList);
         elemNewColors[i] = modColor(bgs[i], closestColor, colorModProps);
         colorUsageList[colorList.indexOf(closestColor)]++;
@@ -244,4 +242,4 @@ being chosen, to prevent theme colors from
 being overused.
 */
 
-themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], ["red", "blue", "yellow"], colorModProps, colorPropWeights);//Like the Starboy album art!
+themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], ["red", "blue"], colorModProps, colorPropWeights);//Like the Starboy album art!
