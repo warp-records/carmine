@@ -63,7 +63,7 @@ function getColorData() {
             };
         	
             textGroups[index].push(node);
-	    	for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") != "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement);
+	    	for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") != "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
 			textNodeBgs.push(getComputedStyle(bgNode).getPropertyValue("background-color"));
         };
     };
@@ -85,6 +85,7 @@ function getColorData() {
 /*color modification properties:
 s: max change in saturation (0-1)
 l: max change in light (0-1)
+
 */
 function modColor(ogColor, desiredColor, colorModProps){
     var ogHsl, desiredHsl, newColor;
@@ -96,9 +97,22 @@ function modColor(ogColor, desiredColor, colorModProps){
 	//if (ogHsl.s == 0) return ogColor;
     
     //create the new color saturation and light, but only within the specified range
-    newColor.s = Math.abs(ogHsl.s-Math.min(colorModProps.s, Math.abs(ogHsl.s-desiredHsl.s)));
-    newColor.l = Math.abs(ogHsl.l-Math.min(colorModProps.l, Math.abs(ogHsl.l-desiredHsl.l)));
+    //newColor.s = Math.min(Math.abs(ogHsl.s+Math.min(colorModProps.s, Math.abs(ogHsl.s-desiredHsl.s))), 1);
+    //newColor.l = Math.min(Math.abs(ogHsl.l+Math.min(colorModProps.l, Math.abs(ogHsl.l-desiredHsl.l))), 1);
+
+    if (desiredHsl.s >= ogHsl.s) {
+        newColor.s = ogHsl.s+Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
+    } else {
+        newColor.s = ogHsl.s-Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
+    };
+
+    if (desiredHsl.l >= ogHsl.l) {
+        newColor.l = ogHsl.l+Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
+    } else {
+        newColor.l = ogHsl.l-Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
+    };
     
+    console.log("==========\nOg: " + tinycolor(ogColor).toHslString() + "\nDesired color: " + tinycolor(desiredColor).toHslString() + "\nNew color: " + tinycolor(newColor).toHslString());
     //};
     
     return tinycolor(newColor).toHexString();
@@ -141,15 +155,17 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
         colorCmyk = tinycolor(colorList[i]).toCmyk();
         colorScores[i] = (Math.abs(ogColorCmyk.c-colorCmyk.c)+Math.abs(ogColorCmyk.m-colorCmyk.m)+Math.abs(ogColorCmyk.y-colorCmyk.y))/360*colorPropWeights.h+Math.abs(ogColorHsl.s-colorHsl.s)*colorPropWeights.s+Math.abs(ogColorHsl.l-colorHsl.l)*colorPropWeights.l+colorUsageList[i]*colorPropWeights.count;//make sure colors aren't overused!
 
-        /*console.log("\n=========================\n"+colorList[i].toUpperCase() + " COLOR SCORE DATA: ");
+        console.log("\n=========================\n"+colorList[i].toUpperCase() + " COLOR SCORE DATA: ");
         console.log("   Cmyk score: " + (Math.abs(ogColorCmyk.c-colorCmyk.c)+Math.abs(ogColorCmyk.m-colorCmyk.m)+Math.abs(ogColorCmyk.y-colorCmyk.y))/360*colorPropWeights.h);
         console.log("   Saturation score: " + Math.abs(ogColorHsl.s-colorHsl.s)*colorPropWeights.s);
         console.log("   Luminance score: " + Math.abs(ogColorHsl.l-colorHsl.l)*colorPropWeights.l);
-        console.log("TOTAL: " + colorScores[i]);*/
+        console.log("TOTAL: " + colorScores[i]);
     };
 
     closestColor = colorList[colorScores.indexOf(Math.min(...colorScores))];
     
+    console.log("Closest color: " + closestColor);
+
     return closestColor;
 };
 
@@ -168,8 +184,9 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBor
     var closestColor, finalColor;
 
     for (var i = 0; i < elemGroups.length; ++i) {
+        console.log("============================\n" + tinycolor(bgs[i]).toRgbString());
         closestColor = getClosestColor(bgs[i], colorList, colorPropWeights, colorUsageList);
-        elemNewColors[i] = modColor(bgs[i], colorList[i], colorModProps);
+        elemNewColors[i] = modColor(bgs[i], closestColor, colorModProps);
         colorUsageList[colorList.indexOf(closestColor)]++;
 		for (j = 0; j < elemGroups[i].length; ++j, ++k) {
 			elemBorderNewColors.push(modBorderColor(bgs[i], elemNewColors[i]), elemBorders[k])
@@ -204,8 +221,8 @@ function themePage(elemGroups, bgs, textGroups, textColors, textNodeBgs, elemBor
 colorData = getColorData();
 
 colorModProps = {
-    s: 0.75,
-    l: 0.5
+    s: 0.5,
+    l: 0.25
 };
 /*
 How much flexibility the color changing 
