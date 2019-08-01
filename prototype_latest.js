@@ -2,14 +2,13 @@
 //https://github.com/theultraman20/carmine
 //By theultraman20, GNU General Public License
 var colorFader = document.createElement("style");
-colorFader.innerText = "*{    -moz-transition:background-color 5s ease-in;    -o-transition:background-color 5s ease-in;    -webkit-transition:background-color 5s ease-in; }"
-//document.querySelector("head").appendChild(colorFader);
+colorFader.innerText = "*{    -moz-transition:background-color 1s ease-in;    -o-transition:background-color 1s ease-in;    -webkit-transition:background-color 1s ease-in; }"
 
 var bgNodeList = document.querySelectorAll(":not(html):not(script):not(link):not(title):not(meta)");
 var textNodeList = getTextNodes();
 var bgNodelen = bgNodeList.length;
 var textNodeLen = textNodeList.length;
-var colorData, colorModProps, colorModRecord, node;
+var colorData, colorModProps, node;
 
 function getTextNodes(){
   var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
@@ -28,12 +27,13 @@ function getColorData(colorList, colorPropWeights, colorSync) {
     var textGroups = [];
 	var textNodeBgs = [];
     var elemGroupsOrdered = [];//ordered by "weight" property
-    var colorUsageList = Array(numColors).fill(0);
+    var colorDiffScales = [];
+    var colorUsageList = Array(colorList.length).fill(0);
     var colorPropScales = {
-            l: 0,
-            s: 0
+            l: 1,
+            s: 1
         };
-    var node, bgNode, bg, bgBorder, textColor, style, oldBgWeights, weight, colorDiffScales, numBgs, index;
+    var node, bgNode, bg, bgBorder, textColor, style, oldBgWeights, weight, numBgs, index;
 
     for (var i = 0; i < bgNodelen; ++i) {
         node = bgNodeList[i];
@@ -48,9 +48,9 @@ function getColorData(colorList, colorPropWeights, colorSync) {
             if (index==-1) {
                 index = allBgs.length;
                 if (colorSync) {
-                    colorDiffScales = getColorDiffScales(bg, getClosestColor(bg, colorList, colorPropWeights, colorUsageList))
-                    if (colorDiffScales.s > colorPropScales.s) colorPropScales.s = colorDiffScales.s;
-                    if (colorDiffScales.l > colorPropScales.l) colorPropScales.l = colorDiffScales.l;
+                    colorDiffScales = getColorDiffScales(bg, getClosestColor(bg, colorList, colorPropWeights, colorUsageList), colorModProps);
+                    if (colorDiffScales.s < colorPropScales.s) colorPropScales.s = colorDiffScales.s;
+                    if (colorDiffScales.l < colorPropScales.l) colorPropScales.l = colorDiffScales.l;
                 };
 
                 elemGroups[index] = [];
@@ -92,7 +92,7 @@ function getColorData(colorList, colorPropWeights, colorSync) {
         elemGroupsOrdered[i] = elemGroups[oldBgWeights.indexOf(bgWeightsOrdered[i])];
     }
 
-    return [elemGroups, allBgs, bgWeights, textGroups, allTextColors, textNodeBgs,  elemBorders];
+    return [elemGroups, allBgs, bgWeights, colorPropScales, textGroups, allTextColors, textNodeBgs,  elemBorders];
 };
 
 
@@ -101,7 +101,7 @@ s: max change in saturation (0-1)
 l: max change in light (0-1)
 
 */
-function modColor(ogColor, desiredColor, colorModProps, colorModRestrictions){
+function modColor(ogColor, desiredColor, colorModProps, colorPropScales){
     var ogHsl, desiredHsl, newColor, colorChangeSync;
     
     //determine a list of new colors to be used
@@ -114,32 +114,38 @@ function modColor(ogColor, desiredColor, colorModProps, colorModRestrictions){
     //create the new color saturation and light, but only within the specified range
 
     /*if (colorChangeSync && colorModRestrictions.s - Math.abs(ogHsl.s-desiredHsl.s) > 0.25) return [-1, "s", Math.abs(ogHsl.s-desiredHsl.s)];*/
-
-    if (desiredHsl.s >= ogHsl.s) {
-        newColor.s = ogHsl.s+Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModRestrictions.s);
+    if (colorChangeSync) {
+        newColor.s*=colorPropScales.s*colorModProps.s;
+        newColor.l*=colorPropScales.l*colorModProps.l;
     } else {
-        newColor.s = ogHsl.s-Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModRestrictions.s);
-    };
+    
+        if (desiredHsl.s >= ogHsl.s) {
+            newColor.s = ogHsl.s+Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
+        } else {
+            newColor.s = ogHsl.s-Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
+        };
 
-    /*if (colorChangeSync && colorModRestrictions.l - Math.abs(ogHsl.l-desiredHsl.l) > 0.25) return [-1, "l", Math.abs(ogHsl.l-desiredHsl.l)];*/
+        /*if (colorChangeSync && colorModRestrictions.l - Math.abs(ogHsl.l-desiredHsl.l) > 0.25) return [-1, "l", Math.abs(ogHsl.l-desiredHsl.l)];*/
 
-    if (desiredHsl.l >= ogHsl.l) {
-        newColor.l = ogHsl.l+Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModRestrictions.l);
-    } else {
-        newColor.l = ogHsl.l-Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModRestrictions.l);
+        if (desiredHsl.l >= ogHsl.l) {
+            newColor.l = ogHsl.l+Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
+        } else {
+            newColor.l = ogHsl.l-Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
+        };
+
     };
     
     //console.log("==========\nOg: " + tinycolor(ogColor).toHslString() + "\nDesired color: " + tinycolor(desiredColor).toHslString() + "\nNew color: " + tinycolor(newColor).toHslString());
     //};
     
-    return [tinycolor(newColor).toHexString()];
+    return tinycolor(newColor).toHexString();
 };
 
-function getColorDiffScales(ogColor, desiredColor){
+function getColorDiffScales(ogColor, desiredColor, colorModProps){
     var ogHsl, desiredHsl;
     ogHsl = tinycolor(ogColor).toHsl();
-    desiredHsl = tinycolor(desiredColor).toHsl();
-    
+    desiredHsl = tinycolor(desiredColor).toHsl(); 
+
     return {
         s: desiredHsl.s/ogHsl.s,
         l: desiredHsl.l/ogHsl.l
@@ -201,38 +207,26 @@ function getClosestColor(ogColorStr, colorList, colorPropWeights, colorUsageList
 
 //tinycolor.mostReadable("#ff0088", ["#2e0c3a"],{includeFallbackColors:true,level:"AAA",size:"small"}).toHexString()
 
-function themePage(elemGroups, bgs, bgWeights, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
+function themePage(elemGroups, bgs, bgWeights, colorPropScales, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
     var numColors = colorList.length;
     var elemNewColors = [];
 	var elemBorderNewColors = [];
 	var textNewColors = [];
-    textColors = [];
+    var textColors = [];
 	textColors.push("black", "white");
     var colorUsageList = Array(numColors).fill(0);
-    var colorModRestrictions = colorModProps;//record of the most times the new color didn't meet the desired color
 	var k = 0;
-    var closestColor, finalColor, modColorStatus;
+    var closestColor, finalColor;
 
     for (var i = 0; i < elemGroups.length; ++i) {
         //console.log("============================\n" + tinycolor(bgs[i]).toRgbString());
         closestColor = getClosestColor(bgs[i], colorList, colorPropWeights, colorUsageList);
         
-        modColorStatus = modColor(bgs[i], closestColor, colorModProps, colorModRestrictions);
-        elemNewColors[i] = modColorStatus[0];
+        elemNewColors[i] = modColor(bgs[i], closestColor, colorModProps, colorPropScales);
         colorUsageList[colorList.indexOf(closestColor)]++;
 		for (j = 0; j < elemGroups[i].length; ++j, ++k) {
 			elemBorderNewColors.push(modBorderColor(bgs[i], elemNewColors[i]), elemBorders[k])
 		};
-
-        if (modColorStatus[0]==-1) {
-            colorModRestrictions[modColorStatus[1]] = modColorStatus[2];//change the restriction record to hold whatever restriction occured in modColor()
-            console.log(colorModRestrictions[modColorStatus[1]])
-            elemNewColors = [];
-            elemBorderNewColors = [];
-            colorUsageList = Array(numColors).fill(0);
-            i = 0;
-            k = 0;
-        };//if it returns false, 
     };
 
 	for (var i = 0; i < textNodeBgs.length; ++i) {    
@@ -282,15 +276,17 @@ being overused.
 colorModProps = {
     s: 1,
     l: 1,
-    colorChangeSync: true
+    colorChangeSync: true//slightly slower but WAY cooler!
 };
 /*
 How much flexibility the color changing 
 algorithm has when changing properties
 of the colors. Can be 0-1. 
 */
+if (!colorData){ 
+    colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
+    document.querySelector("head").appendChild(colorFader);
+}
 
-colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
 
-
-themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorList, colorModProps, colorPropWeights)//Like the Starboy album art!
+themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights)//Like the Starboy album art!
