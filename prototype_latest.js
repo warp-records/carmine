@@ -77,8 +77,8 @@ function getColorData(colorList, colorPropWeights, colorSync) {
             };
         	
             textGroups[index].push(node);
-	    	for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") != "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
-			textNodeBgs.push(getComputedStyle(bgNode).getPropertyValue("background-color"));
+            for (bgNode = node; getComputedStyle(bgNode).getPropertyValue("background-color") == "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
+            textNodeBgs.push(bgNode);
         };
     };
     
@@ -228,10 +228,6 @@ function themePage(elemGroups, bgs, bgWeights, colorPropScales, textGroups, text
 			elemBorderNewColors.push(modBorderColor(bgs[i], elemNewColors[i]), elemBorders[k])
 		};
     };
-
-	for (var i = 0; i < textNodeBgs.length; ++i) {    
-        textNewColors[i] = tinycolor.mostReadable(textNodeBgs[i], textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString()
-    };
     
 	k = 0;//reset k for the text coloring
     //set everything to their new colors!
@@ -240,6 +236,10 @@ function themePage(elemGroups, bgs, bgWeights, colorPropScales, textGroups, text
             elemGroups[i][j].style.backgroundColor = elemNewColors[i];
 			elemGroups[i][j].style.borderColor = elemBorderNewColors[k];
         };
+    };
+    
+    for (var i = 0; i < textNodeBgs.length; ++i) {
+        textNewColors[i] = tinycolor.mostReadable(getComputedStyle(textNodeBgs[i]).getPropertyValue("background-color"), textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString()
     };
 
 	k = 0;
@@ -255,13 +255,13 @@ function themePage(elemGroups, bgs, bgWeights, colorPropScales, textGroups, text
 
 //-------------------------------------------------------------------------------
 
-colorList = ["red", "blue"];
+colorList = ["white"];//["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
 
 colorPropWeights = {
     h: 1, 
     s: 0, 
     l: 0, 
-    count: 0,
+    count: 5,
     size: 1
 };
 /*
@@ -289,4 +289,4 @@ if (!colorData){
 }
 
 
-themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights)//Like the Starboy album art!
+themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights);
