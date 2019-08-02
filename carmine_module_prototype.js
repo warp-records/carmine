@@ -5,6 +5,10 @@
     /*var colorFader = document.createElement("style");
     colorFader.innerText = "*{    -moz-transition:background-color 1s ease-in;    -o-transition:background-color 1s ease-in;    -webkit-transition:background-color 1s ease-in; }"*/
     var carmine = {};
+    carmine.maxThemeCache = 1;//must be at least one
+    carmine.earlyClosestColorCalc = true;//slightly speed things up.
+
+    var themeDataCache = [];
 
     var colorDataSet = {
             colorList: [],
@@ -12,6 +16,7 @@
         };
 
     var colorList = ["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
+
     var colorPropWeights = {
         h: 1, 
         s: 0, 
@@ -35,44 +40,14 @@
         s: 1,
         l: 1
     };
-    var colorData, colorModProps, node;
+    var bgData, textData, themeData, colorData;
 
     function getTextNodes(){
       var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
-      while(n=walk.nextNode()) a.push(n);
+      while(n=walk.nextNode()) a.push(n.parentElement);
       return a;
     };
     //big thanks to phrogz for this: https://stackoverflow.com/questions/10730309/find-all-text-nodes-in-html-page
-
-    function organizeNodeList(nodeList, colorDataHolder, property, blankValue, newValueFoundCallback, iterateCallback){
-        var organizedList = [];
-        var valuesList = [];
-        var listLen = nodeList.length;
-        //var propertyListLen = propertyList.length;
-        var node, style, propValue, index;
-
-        for (var i = 0; i < nodeList.length; ++i) {
-            node = nodeList[i];
-            style = getComputedStyle(node);
-            propValue = style.getPropertyValue(property);
-            
-            if (prop && prop != skipValue) {
-                index = organizedList.indexOf(propValue);
-                if (index == -1) {
-                    index = organizedList.length;
-                    organizedList[index] = [];
-                    valuesList.push(propValue);
-                    newValueFoundCallback(propValue);
-                };
-            };
-            
-            organizedList[index].push(node);
-            iterateCallback(node);
-        };
-
-        colorDataHolder.groupList = organizedList;
-        colorDataHolder.colorList = valuesList;
-    };
 
     function scoreColor(props, ogColor, listedColor){
         var score = 0;
@@ -120,41 +95,12 @@
         }
     };
 
-    function getColorData() {
-        var bgData = Object.create(colorDataSet);
-        bgData.borderColorList = [];
-        var textData = Object.create(colorDataSet);
-        textData.bgColorList = [];
-        //add borders soon
-
-        organizeNodeList(bgNodeList, bgData, "background-color", "rgba(0, 0, 0, 0)", 
-        function(bg){
-            var closestColor = getClosestColor(bg);
-            var colorDiffScales = getColorDiffScales(bg, closestColor);
-
-            if (colorDiffScales.s < colorPropScales.s) colorPropScales.s = colorDiffScales.s;
-            if (colorDiffScales.l < colorPropScales.l) colorPropScales.l = colorDiffScales.l;
-        }, 
-        function(node){
-            bgData.borderColorList.push(bgDatagetComputedStyle(node));
-        });
-
-        organizeNodeList(textNodeList, textData, "color", "", function(bg){}, 
-        function(node){
-            var textNodeBg;//maybe later have it just store the color
-            for (var bgNode = node; (textNodeBg=getComputedStyle(bgNode).getPropertyValue("background-color")) == "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
-            textData.bgColorList.push(bgNode);
-        });
-
-    };
-
-
     /*color modification properties:
     s: max change in saturation (0-1)
     l: max change in light (0-1)
 
     */
-    function modColor(ogColor, desiredColor, colorModProps, colorPropScales){
+    function modColor(ogColor, desiredColor){
         var ogHsl, desiredHsl, newColor
 
         //determine a list of new colors to be used
@@ -164,21 +110,6 @@
 
         newColor.s*=colorPropScales.s*colorModProps.s;
         newColor.l*=colorPropScales.l*colorModProps.l;
-        /*} else {
-
-            if (desiredHsl.s >= ogHsl.s) {
-                newColor.s = ogHsl.s+Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
-            } else {
-                newColor.s = ogHsl.s-Math.min(Math.abs(ogHsl.s-desiredHsl.s), colorModProps.s);
-            };
-
-            if (desiredHsl.l >= ogHsl.l) {
-                newColor.l = ogHsl.l+Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
-            } else {
-                newColor.l = ogHsl.l-Math.min(Math.abs(ogHsl.l-desiredHsl.l), colorModProps.l);
-            };
-
-        };*/
 
         return tinycolor(newColor).toHexString();
     };
@@ -198,29 +129,110 @@
         return tinycolor(newBorder).toHexString();
     };
 
-    /*
-    property weights:
-    {
-    h: 1,
-    s: 1,
-    l: 1,
-    etc...
-    }
-    */
+    function organizeNodeList(nodeList, colorDataHolder, property, skipValue, newValueFoundCallback, iterateCallback){
+        var organizedList = [];
+        var valuesList = [];
+        var listLen = nodeList.length;
+        //var propertyListLen = propertyList.length;
+        var node, style, propValue, index;
+
+        for (var i = 0; i < nodeList.length; ++i) {
+            node = nodeList[i];
+            style = getComputedStyle(node);
+            propValue = style.getPropertyValue(property);
+            
+            if (propValue && propValue != skipValue) {
+                index = valuesList.indexOf(propValue);
+                if (index == -1) {
+                    index = organizedList.length;
+                    organizedList[index] = [];
+                    valuesList.push(propValue);
+                    newValueFoundCallback(propValue);
+                };
+
+                organizedList[index].push(node);
+                iterateCallback(node);
+            };
+        };
+
+        colorDataHolder.groupList = organizedList;
+        colorDataHolder.colorList = valuesList;
+    };
+
+    function getElemData() {//will calculate colordiffscales during elem data collection and slightly speed things up overall. should be used for first theme on page.
+        bgData = Object.create(colorDataSet);
+        bgData.borderColorList = [];
+        bgData.newBgColorList = [];
+        bgData.newBorderColorList = [];
+
+        textData = Object.create(colorDataSet);
+        textData.bgColorList = [];
+        //add borders soon
+
+        organizeNodeList(bgNodeList, bgData, "background-color", "rgba(0, 0, 0, 0)", 
+        function(bg){
+            //just leave it for now...
+                var closestColor = getClosestColor(bg);//just leave it for now
+                var colorDiffScales = getColorDiffScales(bg, closestColor);
+
+                if (colorDiffScales.s < colorPropScales.s) colorPropScales.s = colorDiffScales.s;
+                if (colorDiffScales.l < colorPropScales.l) colorPropScales.l = colorDiffScales.l;
+        }, 
+        function(node){
+            bgData.borderColorList.push(getComputedStyle(node).getPropertyValue("border-top-color"));
+        });
+
+        organizeNodeList(textNodeList, textData, "color", "", function(bg){}, 
+        function(node){
+            var textNodeBg;//maybe later have it just store the color
+            for (var bgNode = node; (textNodeBg=getComputedStyle(bgNode).getPropertyValue("background-color")) == "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
+            textData.bgColorList.push(bgNode);
+        });
+
+    };
+
+    function generateThemeData(){
+        themeData = Object.create(colorDataSet);
+        themeData.bgColorList = [];
+        themeData.borderColorList = [];
+        themeData.textColorList = [];
+        
+        var textColors = ["black", "white"];//todo
+        var bgColorList = bgData.colorList;
+        var bgBorderColorList = bgData.borderColorList;
+        //var textColorList = textData.colorList;
+        var textBgColorList = textData.bgColorList;
+        var k = 0;
+        var closestColor, bgGroupLen, bgColor, newColor;
+
+        for (var i = 0; i < bgNodeLen; ++i) {
+            bgColor = bgColorList[i];
+            closestColor = getClosestColor(bgColor)
+            newColor = modColor(bgColor, closestColor);
+        
+            themeData.bgColorList.push(newColor);
+            colorUsageList[colorList.indexOf(closestColor)]++;
+            for (j = 0, bgGroupLen = bgData.groupList[i].length; j < bgGroupLen; ++j, ++k) {
+                themeData.borderColorList.push(modBorderColor(bgColor, newColor, bgBorderColorList[k]))
+            };
+        };
+
+        for (var i = 0; i < textNodeLen; ++i) {
+            themeData.textColorList.push(tinycolor.mostReadable(textBgColorList[i], textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString())
+        };
+    
+        if (carmine.maxThemeCache == themeDataCache.length) themeDataCache.pop();
+
+        themeDataCache.unshift(themeData);
+        return themeData;
+    };
 
     //MAIN FUNCTION------------------------------------------------------
 
-    //tinycolor.mostReadable("#ff0088", ["#2e0c3a"],{includeFallbackColors:true,level:"AAA",size:"small"}).toHexString()
-
-    function themePage(elemGroups, bgs, bgWeights, colorPropScales, textGroups, textColors, textNodeBgs, elemBorders, colorList, colorModProps, colorPropWeights) {
-        var numColors = colorList.length;
-        var elemNewColors = [];
-        var elemBorderNewColors = [];
-        var textNewColors = [];
-        var textColors = [];
+    function themePage() {
+        var textColor = [];//todo
         textColors.push("black", "white");
         textColors.push(colorList);
-        var colorUsageList = Array(numColors).fill(0);
         var k = 0;
         var closestColor, finalColor;
 
@@ -260,11 +272,11 @@
 
     //-------------------------------------------------------------------------------
 
-    if (!colorData){ 
+    /*if (!colorData){ 
         colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
         document.querySelector("head").appendChild(colorFader);
-    }
+    }*/
 
 
-    themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights);
+    /*themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights);*/
 }();
