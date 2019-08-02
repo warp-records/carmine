@@ -18,12 +18,15 @@
     var colorList = ["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
 
     var colorPropWeights = {
-        h: 1, 
+        c: 1,
+        m: 1,
+        y: 1,
         s: 0, 
-        l: 0, 
+        l: 0,
         count: 5,
         size: 1
     };
+
     var colorModProps = {
         s: 1,
         l: 1,
@@ -32,7 +35,7 @@
         
     var bgNodeList = document.querySelectorAll(":not(html):not(script):not(link):not(title):not(meta)");
     var textNodeList = getTextNodes();
-    var bgNodelen = bgNodeList.length;
+    var bgNodeLen = bgNodeList.length;
     var textNodeLen = textNodeList.length;
     var numColors = colorList.length;
     var colorUsageList = Array(colorList.length).fill(0);//for getClosestColor();
@@ -76,7 +79,6 @@
             colorScores[i] = scoreColor(['c', 'm', 'y'], ogColorCmyk, colorCmyk)/360;
             colorScores[i] += scoreColor(['s', 'l'], ogColorHsl, colorHsl);
             colorScores[i] += colorUsageList[i]*colorPropWeights.count;//make sure colors aren't overused!
-
         };
 
         closestColor = colorList[colorScores.indexOf(Math.min(...colorScores))];
@@ -191,7 +193,7 @@
 
     };
 
-    function generateThemeData(){
+    function genThemeData(){
         themeData = Object.create(colorDataSet);
         themeData.bgColorList = [];
         themeData.borderColorList = [];
@@ -202,13 +204,15 @@
         var bgBorderColorList = bgData.borderColorList;
         //var textColorList = textData.colorList;
         var textBgColorList = textData.bgColorList;
+        var bgNumGroups = bgData.groupList.length;
         var k = 0;
         var closestColor, bgGroupLen, bgColor, newColor;
 
-        for (var i = 0; i < bgNodeLen; ++i) {
+        for (var i = 0; i < bgNumGroups; ++i) {
             bgColor = bgColorList[i];
             closestColor = getClosestColor(bgColor)
             newColor = modColor(bgColor, closestColor);
+            console.log(i);
         
             themeData.bgColorList.push(newColor);
             colorUsageList[colorList.indexOf(closestColor)]++;
