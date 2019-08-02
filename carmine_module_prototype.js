@@ -222,7 +222,7 @@
         };
 
         for (var i = 0; i < textNodeLen; ++i) {
-            themeData.textColorList.push(tinycolor.mostReadable(textBgColorList[i], textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString())
+            themeData.textColorList.push(tinycolor.mostReadable(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"), textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString())
         };
     
         if (carmine.maxThemeCache == themeDataCache.length) themeDataCache.pop();
@@ -231,9 +231,38 @@
         return themeData;
     };
 
+    function themePage(theme){
+        var currentTheme = themeDataCache[theme]
+        var bgColorList = themeData.bgColorList;
+        var borderColorList = themeData.borderColorList;
+        var textGroupList = textData.groupList;
+        var textColorList = themeData.textColorList;
+        var numTextColors = textColorList.length;
+        var groupList = bgData.groupList;
+        var bgNumGroups = groupList.length;
+        var k = 0;
+        var currentGroup, currentGroupLen, currentElem;
+        
+        for (var i = 0; i < bgNumGroups; ++i) {
+            currentGroup = groupList[i];
+            for (var j = 0, currentGroupLen = currentGroup.length; j < currentGroupLen; ++j, ++k) {
+                currentElem = currentGroup[j];
+                currentElem.style.backgroundColor = bgColorList[i];
+                currentElem.style.borderColor = borderColorList[k];
+            };
+        };
+
+        for (var i = 0; i < textGroups.length; ++i) {
+            for (var j = 0; j < textGroups[i].length; ++j, ++k) {
+                textGroups[i][j].style.color = textNewColors[k];
+            };
+        };
+
+    };
+
     //MAIN FUNCTION------------------------------------------------------
 
-    function themePage() {
+    function themePageOld() {
         var textColor = [];//todo
         textColors.push("black", "white");
         textColors.push(colorList);
