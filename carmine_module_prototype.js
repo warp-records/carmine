@@ -4,7 +4,7 @@
 (function(){
     /*var colorFader = document.createElement("style");
     colorFader.innerText = "*{    -moz-transition:background-color 1s ease-in;    -o-transition:background-color 1s ease-in;    -webkit-transition:background-color 1s ease-in; }"*/
-    var carmine = {};
+    function carmine(){};
     carmine.maxThemeCache = 1;//must be at least one
     carmine.earlyClosestColorCalc = true;//slightly speed things up.
 
@@ -15,7 +15,7 @@
             groupList: [],
         };
 
-    var colorList = ["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
+    var colorList = ["red", "yellow", "blue"];//["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
 
     var colorPropWeights = {
         c: 1,
@@ -63,7 +63,7 @@
         };
 
         return score;
-    }
+    };
 
     function getClosestColor(ogColorStr) {//maybe add colorFormat option later? Also add a preanalyzation option for multiple colorLists
         var ogColor = tinycolor(ogColorStr);
@@ -193,7 +193,7 @@
 
     };
 
-    function genThemeData(){
+    function getThemeData(){
         themeData = Object.create(colorDataSet);
         themeData.bgColorList = [];
         themeData.borderColorList = [];
@@ -236,8 +236,8 @@
         var bgColorList = themeData.bgColorList;
         var borderColorList = themeData.borderColorList;
         var textGroupList = textData.groupList;
+        var textNumGroups = textGroupList.length;
         var textColorList = themeData.textColorList;
-        var numTextColors = textColorList.length;
         var groupList = bgData.groupList;
         var bgNumGroups = groupList.length;
         var k = 0;
@@ -252,64 +252,26 @@
             };
         };
 
-        for (var i = 0; i < textGroups.length; ++i) {
-            for (var j = 0; j < textGroups[i].length; ++j, ++k) {
-                textGroups[i][j].style.color = textNewColors[k];
+        for (var i = 0, k = 0; i < textNumGroups; ++i) {
+            currentGroup = textGroupList[i];
+            for (var j = 0, currentGroupLen = currentGroup.length; j < currentGroupLen; ++j, ++k) {
+                currentGroup[j].style.color = textColorList[k];
             };
         };
 
     };
 
-    //MAIN FUNCTION------------------------------------------------------
+    /*carmine.prototype = {
+        getElemData: getElemData,
+        getThemeData: getThemeData,
+        themePage: themePage
+    }*/
 
-    function themePageOld() {
-        var textColor = [];//todo
-        textColors.push("black", "white");
-        textColors.push(colorList);
-        var k = 0;
-        var closestColor, finalColor;
-
-        for (var i = 0; i < elemGroups.length; ++i) {
-            //console.log("============================\n" + tinycolor(bgs[i]).toRgbString());
-            closestColor = getClosestColor(bgs[i], colorList, colorPropWeights, colorUsageList);
-
-            elemNewColors[i] = modColor(bgs[i], closestColor, colorModProps, colorPropScales);
-            colorUsageList[colorList.indexOf(closestColor)]++;
-            for (j = 0; j < elemGroups[i].length; ++j, ++k) {
-                elemBorderNewColors.push(modBorderColor(bgs[i], elemNewColors[i]), elemBorders[k])
-            };
-        };
-
-        k = 0;//reset k for the text coloring
-        //set everything to their new colors!
-        for (var i = 0; i < elemGroups.length; ++i) {
-            for (var j = 0; j < elemGroups[i].length; ++j) {
-                elemGroups[i][j].style.backgroundColor = elemNewColors[i];
-                elemGroups[i][j].style.borderColor = elemBorderNewColors[k];
-            };
-        };
-
-        for (var i = 0; i < textNodeBgs.length; ++i) {
-            textNewColors[i] = tinycolor.mostReadable(getComputedStyle(textNodeBgs[i]).getPropertyValue("background-color"), textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString()
-        };
-
-        k = 0;
-        for (var i = 0; i < textGroups.length; ++i) {
-            for (var j = 0; j < textGroups[i].length; ++j, ++k) {
-                textGroups[i][j].style.color = textNewColors[k];
-            };
-        };
-
-    };
-
-
+    window.carmine = carmine;
     //-------------------------------------------------------------------------------
 
     /*if (!colorData){ 
         colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
         document.querySelector("head").appendChild(colorFader);
     }*/
-
-
-    /*themePage(colorData[0], colorData[1], colorData[2], colorData[3], colorData[4], colorData[5], colorData[6], colorData[7], colorList, colorModProps, colorPropWeights);*/
-}();
+})();
