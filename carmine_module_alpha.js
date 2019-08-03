@@ -4,18 +4,19 @@
 (function(){
     /*var colorFader = document.createElement("style");
     colorFader.innerText = "*{    -moz-transition:background-color 1s ease-in;    -o-transition:background-color 1s ease-in;    -webkit-transition:background-color 1s ease-in; }"*/
-    function carmine(){};
+    var carmine = {};
     carmine.maxThemeCache = 1;//must be at least one
     carmine.earlyClosestColorCalc = true;//slightly speed things up.
 
     var themeDataCache = [];
-
+    var colorList;
+    var numColors;
     var colorDataSet = {
             colorList: [],
             groupList: [],
         };
 
-    var colorList = ["red", "yellow", "blue"];//["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
+    //var colorList = ["red", "blue"];//["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
 
     var colorPropWeights = {
         c: 1,
@@ -37,18 +38,20 @@
     var textNodeList = getTextNodes();
     var bgNodeLen = bgNodeList.length;
     var textNodeLen = textNodeList.length;
-    var numColors = colorList.length;
-    var colorUsageList = Array(colorList.length).fill(0);//for getClosestColor();
     var colorPropScales = {
         s: 1,
         l: 1
     };
-    var bgData, textData, themeData, colorData;
+    var bgData, textData;
 
     function getTextNodes(){
-      var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
-      while(n=walk.nextNode()) a.push(n.parentElement);
-      return a;
+          var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
+          while(n=walk.nextNode()) {
+            if (n.data !== " ") {
+                a.push(n.parentElement);
+            };
+        };
+        return a;
     };
     //big thanks to phrogz for this: https://stackoverflow.com/questions/10730309/find-all-text-nodes-in-html-page
 
@@ -65,7 +68,7 @@
         return score;
     };
 
-    function getClosestColor(ogColorStr) {//maybe add colorFormat option later? Also add a preanalyzation option for multiple colorLists
+    function getClosestColor(ogColorStr, colorUsageList) {//maybe add colorFormat option later? Also add a preanalyzation option for multiple colorLists
         var ogColor = tinycolor(ogColorStr);
         var ogColorHsl = ogColor.toHsl();
         var ogColorCmyk = ogColor.toCmyk();
@@ -174,11 +177,7 @@
         organizeNodeList(bgNodeList, bgData, "background-color", "rgba(0, 0, 0, 0)", 
         function(bg){
             //just leave it for now...
-                var closestColor = getClosestColor(bg);//just leave it for now
-                var colorDiffScales = getColorDiffScales(bg, closestColor);
-
-                if (colorDiffScales.s < colorPropScales.s) colorPropScales.s = colorDiffScales.s;
-                if (colorDiffScales.l < colorPropScales.l) colorPropScales.l = colorDiffScales.l;
+                /**/
         }, 
         function(node){
             bgData.borderColorList.push(getComputedStyle(node).getPropertyValue("border-top-color"));
@@ -193,12 +192,17 @@
 
     };
 
-    function getThemeData(){
+    function getThemeData(_colorList){
+        var themeData;
         themeData = Object.create(colorDataSet);
+        themeData.colorList = _colorList;
         themeData.bgColorList = [];
         themeData.borderColorList = [];
         themeData.textColorList = [];
         
+        colorList = _colorList;
+        numColors = colorList.length;
+        var colorUsageList = Array(colorList.length).fill(0);//for getClosestColor();
         var textColors = ["black", "white"];//todo
         var bgColorList = bgData.colorList;
         var bgBorderColorList = bgData.borderColorList;
@@ -206,23 +210,27 @@
         var textBgColorList = textData.bgColorList;
         var bgNumGroups = bgData.groupList.length;
         var k = 0;
-        var closestColor, bgGroupLen, bgColor, newColor;
+        var closestColor, colorDiffScales, bgGroupLen, bgColor, newColor;
 
         for (var i = 0; i < bgNumGroups; ++i) {
             bgColor = bgColorList[i];
-            closestColor = getClosestColor(bgColor)
+            closestColor = getClosestColor(bgColor, colorUsageList)
             newColor = modColor(bgColor, closestColor);
-            console.log(i);
-        
             themeData.bgColorList.push(newColor);
             colorUsageList[colorList.indexOf(closestColor)]++;
-            for (j = 0, bgGroupLen = bgData.groupList[i].length; j < bgGroupLen; ++j, ++k) {
-                themeData.borderColorList.push(modBorderColor(bgColor, newColor, bgBorderColorList[k]))
+
+            closestColor = getClosestColor(bgColor, colorUsageList);
+            colorDiffScales = getColorDiffScales(bgColor, closestColor);
+            if (colorDiffScales.s < colorPropScales.s) colorPropScales.s = colorDiffScales.s;
+            if (colorDiffScales.l < colorPropScales.l) colorPropScales.l = colorDiffScales.l;
+
+            for (var j = 0, bgGroupLen = bgData.groupList[i].length; j < bgGroupLen; ++j, ++k) {
+                themeData.borderColorList.push(modBorderColor(bgColor, newColor, bgBorderColorList[k]));
             };
         };
 
         for (var i = 0; i < textNodeLen; ++i) {
-            themeData.textColorList.push(tinycolor.mostReadable(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"), textColors, {includeFallbackColors:false,level:"AAA",size:"small"}).toHexString())
+            themeData.textColorList.push(tinycolor.mostReadable(themeData.bgColorList[bgColorList.indexOf(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"))], textColors).toHexString());
         };
     
         if (carmine.maxThemeCache == themeDataCache.length) themeDataCache.pop();
@@ -232,7 +240,9 @@
     };
 
     function themePage(theme){
-        var currentTheme = themeDataCache[theme]
+        var themeData = themeDataCache[theme];
+        colorList = themeData.colorList;
+        numColors = colorList.length;
         var bgColorList = themeData.bgColorList;
         var borderColorList = themeData.borderColorList;
         var textGroupList = textData.groupList;
@@ -261,13 +271,12 @@
 
     };
 
-    /*carmine.prototype = {
-        getElemData: getElemData,
-        getThemeData: getThemeData,
-        themePage: themePage
-    }*/
+    carmine.getElemData = getElemData;
+    carmine.getThemeData = getThemeData;
+    carmine.themePage = themePage;
 
     window.carmine = carmine;
+    
     //-------------------------------------------------------------------------------
 
     /*if (!colorData){ 
@@ -275,3 +284,7 @@
         document.querySelector("head").appendChild(colorFader);
     }*/
 })();
+
+carmine.getElemData();
+carmine.getThemeData(["red", "blue"]);
+carmine.themePage(0);
