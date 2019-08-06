@@ -30,7 +30,7 @@ carmine.getElemData();
 Generates and stores theme data for the web page given
 a color list. Requires generated elem data.
 ```js
-carmine.getElemData();//required 
+carmine.getElemData();
 carmine.getThemeData(["red", "yellow", "blue"]);
 ```
 
@@ -39,7 +39,7 @@ Themes the web page given a color list from the theme data
 that was generated for that color list. Requires generated
 elem data and generated theme data.
 ```js
-carmine.getElemData();//required 
+carmine.getElemData();
 carmine.getThemeData(["red", "yellow", "blue"]);
 carmine.themePage(["red", "yellow", "blue"])
 ```
