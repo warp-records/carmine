@@ -2,12 +2,16 @@
 //https://github.com/theultraman20/carmine
 //By theultraman20, GNU General Public License
 (function(){
-    /*var colorFader = document.createElement("style");
-    colorFader.innerText = "*{    -moz-transition:background-color 1s ease-in;    -o-transition:background-color 1s ease-in;    -webkit-transition:background-color 1s ease-in; }"*/
-    var carmine = {};
-    carmine.maxThemeCache = 1;//must be at least one
-    carmine.earlyClosestColorCalc = true;//slightly speed things up.
+    var colorFader = document.createElement("style");
+    colorFader.innerText = "*{    -moz-transition:background-color 0.5s ease-in;    -o-transition:background-color 0.5s ease-in;    -webkit-transition:background-color 0.5s ease-in; }";
+    document.querySelector("head").appendChild(colorFader);
+    
 
+    var carmine = {};
+    carmine.maxThemeCache = 5;//must be at least one
+    carmine.cacheList = [];
+
+    var cacheListString = [];
     var themeDataCache = [];
     var colorList;
     var numColors;
@@ -16,7 +20,8 @@
             groupList: [],
         };
 
-    //var colorList = ["red", "blue"];//["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"];//home - resonnance
+    //home - resonance ["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"]
+    //home - sun ["#d61ea2", "#ff5160", "#26211e"]
 
     var colorPropWeights = {
         c: 1,
@@ -30,8 +35,7 @@
 
     var colorModProps = {
         s: 1,
-        l: 1,
-        colorChangeSync: true//slightly slower but WAY cooler!
+        l: 1
     };
         
     var bgNodeList = document.querySelectorAll(":not(html):not(script):not(link):not(title):not(meta)");
@@ -156,7 +160,7 @@
                 };
 
                 organizedList[index].push(node);
-                iterateCallback(node);
+                iterateCallback(node, index);
             };
         };
 
@@ -166,6 +170,7 @@
 
     function getElemData() {//will calculate colordiffscales during elem data collection and slightly speed things up overall. should be used for first theme on page.
         bgData = Object.create(colorDataSet);
+        bgData.bgWeights = [];
         bgData.borderColorList = [];
         bgData.newBgColorList = [];
         bgData.newBorderColorList = [];
@@ -175,9 +180,9 @@
         //add borders soon
 
         organizeNodeList(bgNodeList, bgData, "background-color", "rgba(0, 0, 0, 0)", 
-        function(bg){
-            //just leave it for now...
-                /**/
+        function(_, index){
+            var weight = node.offsetWidth*node.offsetHeight;
+            if (weight==weight) bgData.bgWeights[index] += weight;
         }, 
         function(node){
             bgData.borderColorList.push(getComputedStyle(node).getPropertyValue("border-top-color"));
@@ -233,14 +238,28 @@
             themeData.textColorList.push(tinycolor.mostReadable(themeData.bgColorList[bgColorList.indexOf(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"))], textColors).toHexString());
         };
     
-        if (carmine.maxThemeCache == themeDataCache.length) themeDataCache.pop();
+        if (carmine.maxThemeCache == themeDataCache.length) {
+            themeDataCache.pop();
+            cacheListString.pop();
+            carmine.cacheList.pop();
+        };
 
         themeDataCache.unshift(themeData);
-        return themeData;
+        cacheListString.unshift(JSON.stringify(colorList));
+        carmine.cacheList.unshift(colorList);
+
+        //return themeData;
     };
 
     function themePage(theme){
-        var themeData = themeDataCache[theme];
+        var themeData;
+          
+        if (typeof(theme)=="object") {
+            themeData = themeDataCache[cacheListString.indexOf(JSON.stringify(theme))];
+        } else {
+            themeData = themeDataCache[theme];
+        };
+        
         colorList = themeData.colorList;
         numColors = colorList.length;
         var bgColorList = themeData.bgColorList;
@@ -281,10 +300,11 @@
 
     /*if (!colorData){ 
         colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
-        document.querySelector("head").appendChild(colorFader);
+        document.querySelector("head").appendChild(colorFader); 
     }*/
 })();
 
 carmine.getElemData();
-carmine.getThemeData(["red", "blue"]);
-carmine.themePage(0);
+carmine.getThemeData(["red", "blue", "yellow"]);
+carmine.getThemeData(["#d61ea2", "#ff5160", "#26211e"]);
+carmine.themePage(["#d61ea2", "#ff5160", "#26211e"]);
