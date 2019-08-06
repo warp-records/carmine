@@ -1,7 +1,7 @@
 # carmine-private
 A web color themeing tool
 
-##Description
+## Description
 Carmine is a smart web themeing javascript module.
 Carmine can generate a theme for any website given
 a list of colors. Carmine will group all elements
@@ -11,22 +11,22 @@ Carmine will also adjust the chosen colors from the list
 to preserve the saturation and luminance differences in
 the web page.
 
-##Installation
+## Installation
 Carmine requires tinycolor.js to run. Make sure to have
 tiny color running when you run carmine!
 
-##Usage
+## Usage
 
-##Methods
+## Methods
 
-###getElemData
+### getElemData
 Generates and stores data about the elements on the web
 page.
 ```js
 carmine.getElemData();
 ```
 
-###getThemeData
+### getThemeData
 Generates and stores theme data for the web page given
 a color list. Requires generated elem data.
 ```js
@@ -34,7 +34,7 @@ carmine.getElemData();//required
 carmine.getThemeData(["red", "yellow", "blue"]);
 ```
 
-###themePage
+### themePage
 Themes the web page given a color list from the theme data
 that was generated for that color list. Requires generated
 elem data and generated theme data.
