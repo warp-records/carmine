@@ -41,5 +41,5 @@ elem data and generated theme data.
 ```js
 carmine.getElemData();
 carmine.getThemeData(["red", "yellow", "blue"]);
-carmine.themePage(["red", "yellow", "blue"])
+carmine.themePage(["red", "yellow", "blue"]);
 ```
