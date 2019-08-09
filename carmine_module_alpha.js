@@ -29,7 +29,7 @@
         y: 1,
         s: 0, 
         l: 0,
-        lowSatBgFactor: 
+        lowSatBgFactor: 0,
         count: 5,
         size: 1
     };
