@@ -1,7 +1,7 @@
 //Carmine prototype
 //https://github.com/theultraman20/carmine
 //By theultraman20, GNU General Public License
-(function(){
+//(function(){
     var colorFader = document.createElement("style");
     colorFader.innerText = "*{    -moz-transition:background-color 0.5s ease-in;    -o-transition:background-color 0.5s ease-in;    -webkit-transition:background-color 0.5s ease-in; }";
     document.querySelector("head").appendChild(colorFader);
@@ -29,11 +29,18 @@
         y: 1,
         s: 0, 
         l: 0,
+        lowSatBgFactor: 
         count: 5,
         size: 1
     };
 
     var colorModProps = {
+        s: 0,
+        l: 0,
+        saturationDescaling: 0.1
+    };
+    
+    var colorPropScales = {
         s: 1,
         l: 1
     };
@@ -42,11 +49,7 @@
     var textNodeList = getTextNodes();
     var bgNodeLen = bgNodeList.length;
     var textNodeLen = textNodeList.length;
-    var colorPropScales = {
-        s: 1,
-        l: 1
-    };
-    var bgData, textData;
+    var bgData, textData, largestColor;
 
     function getTextNodes(){
           var n, a=[], walk=document.createTreeWalker(document.querySelector("body"),NodeFilter.SHOW_TEXT,null,false);
@@ -109,16 +112,28 @@
     l: max change in light (0-1)
 
     */
+    function getMedian(array){
+        var arrayLen = array.length;
+        
+        if (arrayLen%2==0) {//even
+            return (array[arrayLen/2-1] + array[arrayLen/2])/2;
+        } else {
+            return array[(arrayLen-1)/2];
+        }
+    };
+    
     function modColor(ogColor, desiredColor){
-        var ogHsl, desiredHsl, newColor
-
+        var ogColorSize = bgData.bgWeights[bgData.colorList.indexOf(ogColor)];
+        var maxColorSize = Math.max(... bgData.bgWeights);
+        var ogHsl, desiredHsl, newColor;
+        
         //determine a list of new colors to be used
         ogHsl = tinycolor(ogColor).toHsl();//background hsl model
         desiredHsl = tinycolor(desiredColor).toHsl();//hsl model of colorList color
         newColor = desiredHsl; 
 
-        newColor.s*=colorPropScales.s*colorModProps.s;
-        newColor.l*=colorPropScales.l*colorModProps.l;
+        newColor.s *= Math.min(colorPropScales.s + colorModProps.s - ogColorSize/maxColorSize*colorModProps.saturationDescaling, 1);
+        newColor.l *= Math.min(colorPropScales.l + colorModProps.l, 1)
 
         return tinycolor(newColor).toHexString();
     };
@@ -177,15 +192,18 @@
 
         textData = Object.create(colorDataSet);
         textData.bgColorList = [];
+        textData.textNodes = [];
         //add borders soon
 
         organizeNodeList(bgNodeList, bgData, "background-color", "rgba(0, 0, 0, 0)", 
-        function(_, index){
-            var weight = node.offsetWidth*node.offsetHeight;
-            if (weight==weight) bgData.bgWeights[index] += weight;
+        function(node, index){
+            bgData.bgWeights.push(0)
         }, 
-        function(node){
+        function(node, index){
+            var weight = node.offsetWidth*node.offsetHeight;
+
             bgData.borderColorList.push(getComputedStyle(node).getPropertyValue("border-top-color"));
+            if (weight==weight) bgData.bgWeights[index] += weight;
         });
 
         organizeNodeList(textNodeList, textData, "color", "", function(bg){}, 
@@ -193,6 +211,7 @@
             var textNodeBg;//maybe later have it just store the color
             for (var bgNode = node; (textNodeBg=getComputedStyle(bgNode).getPropertyValue("background-color")) == "rgba(0, 0, 0, 0)"; bgNode = bgNode.parentElement) if (!bgNode.parentElement) break;
             textData.bgColorList.push(bgNode);
+            textData.textNodes.push(node);
         });
 
     };
@@ -207,6 +226,10 @@
         
         colorList = _colorList;
         numColors = colorList.length;
+        colorPropScales = {
+            s: 1,
+            l: 1
+        };
         var colorUsageList = Array(colorList.length).fill(0);//for getClosestColor();
         var textColors = ["black", "white"];//todo
         var bgColorList = bgData.colorList;
@@ -235,7 +258,9 @@
         };
 
         for (var i = 0; i < textNodeLen; ++i) {
-            themeData.textColorList.push(tinycolor.mostReadable(themeData.bgColorList[bgColorList.indexOf(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"))], textColors).toHexString());
+            themeData.textColorList.push(
+                tinycolor.mostReadable(themeData.bgColorList[bgColorList.indexOf(getComputedStyle(textBgColorList[i]).getPropertyValue("background-color"))], textColors).toHexString()
+            );
         };
     
         if (carmine.maxThemeCache == themeDataCache.length) {
@@ -264,8 +289,10 @@
         numColors = colorList.length;
         var bgColorList = themeData.bgColorList;
         var borderColorList = themeData.borderColorList;
-        var textGroupList = textData.groupList;
-        var textNumGroups = textGroupList.length;
+        /*var textGroupList = textData.groupList;
+        var textNumGroups = textGroupList.length;*/
+        var textNodeList = textData.textNodes;
+        var textNodeListLen = textData.textNodes.length;
         var textColorList = themeData.textColorList;
         var groupList = bgData.groupList;
         var bgNumGroups = groupList.length;
@@ -281,11 +308,16 @@
             };
         };
 
-        for (var i = 0, k = 0; i < textNumGroups; ++i) {
+        //using the organized groups causes a bug since the nodes aren't ordered...
+
+        /*for (var i = 0, k = 0; i < textNumGroups; ++i) {
             currentGroup = textGroupList[i];
             for (var j = 0, currentGroupLen = currentGroup.length; j < currentGroupLen; ++j, ++k) {
                 currentGroup[j].style.color = textColorList[k];
             };
+        };*/
+        for (var i = 0; i < textNodeListLen; ++i) {
+            textNodeList[i].style.color = textColorList[i];
         };
 
     };
@@ -302,9 +334,13 @@
         colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
         document.querySelector("head").appendChild(colorFader); 
     }*/
-})();
+//})();
 
 carmine.getElemData();
-carmine.getThemeData(["red", "blue", "yellow"]);
-carmine.getThemeData(["#d61ea2", "#ff5160", "#26211e"]);
-carmine.themePage(["#d61ea2", "#ff5160", "#26211e"]);
+carmine.getThemeData(["purple", "black", "white"]);
+//carmine.getThemeData(["#d61ea2", "#ff5160", "#26211e"]);
+//carmine.getThemeData(["rgb(97, 38, 34)", "rgb(191, 169, 134)", "rgb(20, 147, 70)"]);
+
+//test theme
+//carmine.getThemeData(["#45207d", "#c21f79", "#252438"]);
+carmine.themePage(0);
