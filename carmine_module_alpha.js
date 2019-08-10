@@ -1,10 +1,10 @@
 //Carmine prototype
 //https://github.com/theultraman20/carmine
-//By theultraman20, GNU General Public License
-//(function(){
+//By theultraman20
+(function(){
     var colorFader = document.createElement("style");
     colorFader.innerText = "*{    -moz-transition:background-color 0.5s ease-in;    -o-transition:background-color 0.5s ease-in;    -webkit-transition:background-color 0.5s ease-in; }";
-    document.querySelector("head").appendChild(colorFader);
+    //document.querySelector("head").appendChild(colorFader);
     
 
     var carmine = {};
@@ -29,7 +29,7 @@
         y: 1,
         s: 0, 
         l: 0,
-        lowSatBgFactor: 0,
+        lowSatBgFactor: 2,
         count: 5,
         size: 1
     };
@@ -75,20 +75,45 @@
         return score;
     };
 
+    function getMedian(array){
+        var arrayLen = array.length;
+        
+        if (arrayLen%2==0) {//even
+            return (array[arrayLen/2-1] + array[arrayLen/2])/2;
+        } else {
+            return array[(arrayLen-1)/2];
+        };
+    };
+
+    function removeZeroes(array){
+        var tmp;
+        for (var i = array.length; !(tmp=array.pop()); --i);
+        array.push(tmp);
+        return array;
+    };
+
     function getClosestColor(ogColorStr, colorUsageList) {//maybe add colorFormat option later? Also add a preanalyzation option for multiple colorLists
+        var bgWeights = bgData.bgWeights;
+        var medianBgWeight = bgData.medianBgWeight;
+        var ogColorSatScale = bgWeights[bgData.colorList.indexOf(ogColorStr)] / medianBgWeight;//it's "saturation scale" based off of the median saturation
+        
+        var maxWeight = Math.max(... bgWeights);
         var ogColor = tinycolor(ogColorStr);
         var ogColorHsl = ogColor.toHsl();
         var ogColorCmyk = ogColor.toCmyk();
         var colorScores = [];
         var color, colorHsl, colorCmyk, closestColor;
 
+        console.log(ogColorStr + " sat scale: " + ogColorSatScale + "\n");
+
         for (var i = 0; i < numColors; ++i) {
             colorHsl = tinycolor(colorList[i]).toHsl();
             colorCmyk = tinycolor(colorList[i]).toCmyk();
-
+            
             colorScores[i] = scoreColor(['c', 'm', 'y'], ogColorCmyk, colorCmyk)/360;
             colorScores[i] += scoreColor(['s', 'l'], ogColorHsl, colorHsl);
-            colorScores[i] += colorUsageList[i]*colorPropWeights.count;//make sure colors aren't overused!
+            colorScores[i] += ogColorSatScale / maxWeight / (colorHsl.s/255) * colorPropWeights.lowSatBgFactor;
+            colorScores[i] += colorUsageList[i] * colorPropWeights.count;//make sure colors aren't overused!
         };
 
         closestColor = colorList[colorScores.indexOf(Math.min(...colorScores))];
@@ -112,15 +137,6 @@
     l: max change in light (0-1)
 
     */
-    function getMedian(array){
-        var arrayLen = array.length;
-        
-        if (arrayLen%2==0) {//even
-            return (array[arrayLen/2-1] + array[arrayLen/2])/2;
-        } else {
-            return array[(arrayLen-1)/2];
-        }
-    };
     
     function modColor(ogColor, desiredColor){
         var ogColorSize = bgData.bgWeights[bgData.colorList.indexOf(ogColor)];
@@ -187,8 +203,7 @@
         bgData = Object.create(colorDataSet);
         bgData.bgWeights = [];
         bgData.borderColorList = [];
-        bgData.newBgColorList = [];
-        bgData.newBorderColorList = [];
+        bgData.medianBgWeight = 0;
 
         textData = Object.create(colorDataSet);
         textData.bgColorList = [];
@@ -213,7 +228,8 @@
             textData.bgColorList.push(bgNode);
             textData.textNodes.push(node);
         });
-
+        
+        bgData.medianBgWeight = getMedian(removeZeroes(bgData.bgWeights.sort()));
     };
 
     function getThemeData(_colorList){
@@ -334,10 +350,10 @@
         colorData = getColorData(colorList, colorPropWeights, colorModProps.colorChangeSync);
         document.querySelector("head").appendChild(colorFader); 
     }*/
-//})();
+})();
 
 carmine.getElemData();
-carmine.getThemeData(["purple", "black", "white"]);
+carmine.getThemeData(["#e57244", "#6a60db", "#4261de", "#89c2fd", "#e1f4fe"]);
 //carmine.getThemeData(["#d61ea2", "#ff5160", "#26211e"]);
 //carmine.getThemeData(["rgb(97, 38, 34)", "rgb(191, 169, 134)", "rgb(20, 147, 70)"]);
 
