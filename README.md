@@ -1,4 +1,4 @@
-# carmine-private
+# carmine
 A web color themeing tool
 
 ## Description
