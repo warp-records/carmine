@@ -1,6 +1,8 @@
 # carmine
 A web color themeing tool.
 
+![Image of Carmine on Youtube](https://github.com/theultraman20/carmine/carmineYoutube.png)
+
 ## Description
 Carmine is a smart web themeing javascript module.
 Carmine can generate a theme for any website given
