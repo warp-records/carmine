@@ -43,3 +43,5 @@ carmine.getElemData();
 carmine.getThemeData(["red", "yellow", "blue"]);
 carmine.themePage(["red", "yellow", "blue"]);
 ```
+
+© 2019 theultraman20
