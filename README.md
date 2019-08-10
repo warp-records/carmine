@@ -1,5 +1,5 @@
 # carmine
-A web color themeing tool
+A web color themeing tool.
 
 ## Description
 Carmine is a smart web themeing javascript module.
