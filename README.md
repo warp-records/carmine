@@ -12,6 +12,7 @@ of elements the most appropriate color from the list.
 Carmine will also adjust the chosen colors from the list
 to preserve the saturation and luminance differences in
 the web page.
+Discontinued probably like forever, and it's pretty horrible code too.
 
 ## Installation
 Carmine requires tinycolor.js to run. Make sure to have
